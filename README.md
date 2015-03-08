@@ -1,12 +1,13 @@
 # mpu6050_in_C #
 This is a demo to access mpu6050 in C
+with complimentary filter
 
 ## Requirements
 1. wiringPi 
 
 
 ## Build Instruction:  ## 
-gcc -o ./mpu6050 ./mpu6050.c -lwiringPi -lm
+gcc -o ./mpu6050 ./mpu6050.c -lwiringPi -lm -lpthread
 
 
 ## Reference: ##
