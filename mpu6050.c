@@ -7,7 +7,7 @@
 
 // PID parameters
 double Kp = 5.5;
-double Ki = 0.0;
+double Ki = 1.0;
 double Kd = 0.0;
 double K  = 1.9*1.12;
 
