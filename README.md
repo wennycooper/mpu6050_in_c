@@ -7,7 +7,7 @@ with complimentary filter
 
 
 ## Build Instruction:  ## 
-gcc -o ./mpu6050 ./mpu6050.c -lwiringPi -lm -lpthread
+gcc -o mpu6050 ./mpu6050.c ./motors.c  -lwiringPi -lpthread -lm
 
 
 ## Reference: ##

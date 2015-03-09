@@ -4,7 +4,16 @@
 #include  <math.h>
 #include  <sys/time.h>
 
-double K = (double) 0.98;
+
+// PID parameters
+double Kp = 5.5;
+double Ki = 0.0;
+double Kd = 0.0;
+double K  = 1.9*1.12;
+
+
+// Complimentary Filter parameters
+double K0 = (double) 0.98;
 double K1 = (double) 0.02;
 
 int fd;
@@ -82,10 +91,46 @@ unsigned long long  getTimestamp()
 }
 
 
+double constrain(double v, double min_v, double max_v)
+{
+  if (v <= min_v)
+    return (double)min_v;
+  else if (v >= max_v)
+    return (double)max_v;
+  else
+    return (double)v;
+}
 
+double GUARD_GAIN = 10.0;
+double error, last_error, integrated_error;
+double pTerm, iTerm, dTerm;
+double angle;
+double angle_offset = 1.5;
+
+double speed;
+
+
+void pid()
+{
+  error = last_y - angle_offset;
+
+  pTerm = Kp * error;
+
+  integrated_error += error;
+  iTerm = Ki * constrain(integrated_error, -GUARD_GAIN, GUARD_GAIN);
+
+  dTerm = Kd * (error - last_error);
+  last_error = error;
+
+  speed = constrain(K*(pTerm + iTerm + dTerm), -100.0, +100.0); 
+  
+}
 
 int main()
 {
+  init_motors();
+  delay(200);
+
   fd = wiringPiI2CSetup (0x68);
   wiringPiI2CWriteReg8 (fd,0x6B,0x00);//disable sleep mode 
   printf("set 0x6B=%X\n",wiringPiI2CReadReg8 (fd,0x6B));
@@ -127,16 +172,25 @@ int main()
 
 //    printf("[BEFORE] gyro_scaled_y=%f, deltaT=%lf, rotation_y=%f, last_y= %f\n", (double)gyro_scaled_y, (double)deltaT, (double)rotation_y, (double) last_y);
 
-//    printf("[1st part] = %f\n", (double) K*(last_y + gyro_y_delta));
+//    printf("[1st part] = %f\n", (double) K0*(last_y + gyro_y_delta));
 //    printf("[2nd part] = %f\n", (double) K1*rotation_y);
-    last_x = K * (last_x + gyro_x_delta) + (K1 * rotation_x);
-    last_y = K * (last_y + gyro_y_delta) + (K1 * rotation_y);
+    last_x = K0 * (last_x + gyro_x_delta) + (K1 * rotation_x);
+    last_y = K0 * (last_y + gyro_y_delta) + (K1 * rotation_y);
 
-    printf("[AFTER] gyro_scaled_y=%f, deltaT=%lf, rotation_y=%f, last_y= %f\n", (double)gyro_scaled_y, (double)deltaT, (double)rotation_y, (double) last_y);
-
+    printf("[AFTER] gyro_scaled_y=%f, deltaT=%lf, rotation_y=%f, last_y=%f\n", (double)gyro_scaled_y, (double)deltaT, (double)rotation_y, (double) last_y);
     
-    delay(500);
+    if (last_y < -60.0 || last_y > 60.0) 
+      stop_motors();
+
+    pid();
+    printf("speed=%lf\n", speed);
+
+    motors();
+    
+    delay(10);
 //    printf("------------------\n");
   }
+
+  stop_motors();
   return 0;
 }
